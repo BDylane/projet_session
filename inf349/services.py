@@ -2,6 +2,9 @@ import requests
 from .models import Product, db
 
 def fetch_and_store_products():
+    if not db.table_exists('products'):
+        print("La table 'products' n'existe pas.")
+        return
     # URL fournie dans l'énoncé 
     url = "http://dimensweb.uqac.ca/~jgnault/shops/products/"
     

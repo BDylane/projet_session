@@ -5,19 +5,23 @@ from .services import fetch_and_store_products
 def create_app():
     app = Flask(__name__)
 
-    # On récupère les produits au lancement de l'application [cite: 377, 379]
-    with app.app_context():
-        fetch_and_store_products()
-
     @app.cli.command("init-db")
     def init_db():
-        db.connect()
+        db.connect(reuse_if_open=True)
         db.create_tables([Product, Order])
+        db.close()
         print("La base de données a été initialisée avec succès !")
-    
+
+    @app.before_first_request
+    def load_products():
+        db.connect(reuse_if_open=True)
+        fetch_and_store_products()
+        db.close()
+
     @app.after_request
     def after_request(response):
-        db.close()
+        if not db.is_closed():
+            db.close()
         return response
 
     from .routes import api
