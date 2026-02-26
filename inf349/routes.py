@@ -21,31 +21,54 @@ def get_products():
         output.append({"id": p.id, "name": p.name, "description": p.description, "price": p.price, "in_stock": p.in_stock, "weight": p.weight, "image": p.image})
     return jsonify({"products": output}), 200
 
+MISSING_FIELDS_ERROR = {
+    "errors": {
+        "product": {
+            "code": "missing-fields",
+            "name": "La création d'une commande nécessite un produit"
+        }
+    }
+}
+
+OUT_OF_INVENTORY_ERROR = {
+    "errors": {
+        "product": {
+            "code": "out-of-inventory",
+            "name": "Le produit demandé n'est pas en inventaire"
+        }
+    }
+}
+
 @api.route('/order', methods=['POST'])
 def create_order():
     data = request.get_json()
-    
-    if not data or 'product' not in data or 'id' not in data['product'] or 'quantity' not in data['product']:
-        return jsonify({"errors": {"product": {"code": "missing-fields", "name": "Produit et quantité requis"}}}), 422
-    
-    p_id = data['product']['id']
-    qty = data['product']['quantity']
+    if (
+        not data or
+        "product" not in data or
+        "id" not in data["product"] or
+        "quantity" not in data["product"] or
+        data["product"]["quantity"] < 1
+    ):
+        return jsonify(MISSING_FIELDS_ERROR), 422
 
-    # --- C'EST CETTE PARTIE QUI PROTÈGE LE CODE ---
+    p_id = data["product"]["id"]
+    qty = data["product"]["quantity"]
+
     try:
         product = Product.get_by_id(p_id)
     except Product.DoesNotExist:
-        return jsonify({"errors": {"product": {"code": "out-of-inventory", "name": "Le produit demandé n'existe pas"}}}), 422
+        return jsonify(OUT_OF_INVENTORY_ERROR), 422
 
     if not product.in_stock:
-        return jsonify({"errors": {"product": {"code": "out-of-inventory", "name": "Hors inventaire"}}}), 422
-
+        return jsonify(OUT_OF_INVENTORY_ERROR), 422
+    
     new_order = Order.create(
         product=product,
         quantity=qty,
         total_price=product.price * qty,
         shipping_price=calculate_shipping(product.weight * qty)
     )
+
     return redirect(url_for('api.get_order', order_id=new_order.id)), 302
 
 @api.route('/order/<int:order_id>', methods=['PUT'])
