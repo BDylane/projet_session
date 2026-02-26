@@ -1,6 +1,8 @@
-# 8INF349 - Projet de session
+# 8INF349 – Projet de session
+
 ## Description
-Ce projet consiste à développer une application Web en Python utilisant Flask.
+
+Ce projet consiste à développer une application Web en Python utilisant le framework Flask.
 L’application permet de gérer des commandes de produits via une API REST et d’effectuer des paiements à l’aide d’un service distant.
 
 ---
@@ -16,17 +18,35 @@ L’application permet de gérer des commandes de produits via une API REST et d
 git clone https://github.com/BDylane/projet_session.git
 cd projet_session
 ```
-
+### 2. Créer un environnement virtuel Python
+*Prérequis : Python 3.6+*
+```bash
+python3 -m venv venv
+```
+### 3. Activer l’environnement virtuel
+Linux / Mac :
+```bash
+source venv/bin/activate
+```
+Windows :
+```bash
+venv\Scripts\activate
+```
+### 4. Installer les dépendances
+```bash
+pip install -r requirements.txt
+```
+---
 ## Initialisation de la base de données
 Avant de lancer l’application, il faut initialiser la base de données :
 ```bash
 FLASK_DEBUG=True FLASK_APP=inf349 flask init-db
 ```
 Cette commande :
-* Crée les tables nécessaires.
+* Crée les tables nécessaires dans la base de données SQLite.
 ---
 ## Lancement de l’application
-```
+```bash
 FLASK_DEBUG=True FLASK_APP=inf349 flask run
 ```
 Au premier lancement :
