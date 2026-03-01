@@ -135,9 +135,16 @@ def get_order(order_id):
             "total_price": order.total_price,
             "total_price_tax": round(order.total_price_tax, 2),
             "email": order.email,
+            "credit_card": {},
+            "shipping_information": {},
             "paid": order.paid,
-            "shipping_price": order.shipping_price,
-            "transaction": {"id": order.transaction_id} if order.paid else {},
-            "product": {"id": order.product.id, "quantity": order.quantity}
+            "transaction": {
+                "id": order.transaction_id
+                } if order.paid else {},
+            "product": {
+                "id": order.product.id,
+                "quantity": order.quantity
+            },
+            "shipping_price": order.shipping_price
         }
     }), 200
