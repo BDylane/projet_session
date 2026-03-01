@@ -21,7 +21,7 @@ def get_products():
         output.append({"id": p.id, "name": p.name, "description": p.description, "price": p.price, "in_stock": p.in_stock, "weight": p.weight, "image": p.image})
     return jsonify({"products": output}), 200
 
-MISSING_FIELDS_ERROR = {
+PRODUCTS_MISSING_FIELDS_ERROR = {
     "errors": {
         "product": {
             "code": "missing-fields",
@@ -49,7 +49,7 @@ def create_order():
         "quantity" not in data["product"] or
         data["product"]["quantity"] < 1
     ):
-        return jsonify(MISSING_FIELDS_ERROR), 422
+        return jsonify(PRODUCTS_MISSING_FIELDS_ERROR), 422
 
     p_id = data["product"]["id"]
     qty = data["product"]["quantity"]
@@ -71,24 +71,88 @@ def create_order():
 
     return redirect(url_for('api.get_order', order_id=new_order.id)), 302
 
+
+ORDERS_MISSING_FIELDS_ERROR = {
+    "errors": {
+        "order": {
+            "code": "missing-fields",
+            "name": "Il manque un ou plusieurs champs qui sont obligatoires"
+        }
+    }
+}
+
 @api.route('/order/<int:order_id>', methods=['PUT'])
 def update_order(order_id):
     try:
         order = Order.get_by_id(order_id)
     except Order.DoesNotExist:
-        return jsonify({"error": "Commande non trouvée"}), 404
+        return jsonify({
+            "errors": {
+                "order": {
+                    "code": "not-found",
+                    "name": "La commande demandée n'existe pas"
+                }
+            }
+        }), 404
 
     data = request.get_json()
-    ship = data.get('order', {}).get('shipping_information', {})
-    
-    order.email = data.get('order', {}).get('email')
-    order.address, order.postal_code = ship.get('address'), ship.get('postal_code')
-    order.city, order.province, order.country = ship.get('city'), ship.get('province'), ship.get('country')
+
+    if not data or "order" not in data:
+        return jsonify(ORDERS_MISSING_FIELDS_ERROR), 422
+
+    order_data = data.get("order")
+    ship = order_data.get("shipping_information")
+
+    required_fields = [
+        order_data.get("email"),
+        ship,
+        ship.get("country") if ship else None,
+        ship.get("address") if ship else None,
+        ship.get("postal_code") if ship else None,
+        ship.get("city") if ship else None,
+        ship.get("province") if ship else None,
+    ]
+
+    if any(field is None for field in required_fields):
+        return jsonify(ORDERS_MISSING_FIELDS_ERROR), 422
+
+    # Mise à jour
+    order.email = order_data.get("email")
+    order.address = ship.get("address")
+    order.postal_code = ship.get("postal_code")
+    order.city = ship.get("city")
+    order.province = ship.get("province")
+    order.country = ship.get("country")
 
     tax_rate = get_tax_rate(order.province)
     order.total_price_tax = (order.total_price + order.shipping_price) * (1 + tax_rate)
+
     order.save()
-    return redirect(url_for('api.get_order', order_id=order.id)), 302
+
+    # Retourne la commande mise à jour (200 OK)
+    return jsonify({
+        "order": {
+            "id": order.id,
+            "email": order.email,
+            "shipping_information": {
+                "country": order.country,
+                "address": order.address,
+                "postal_code": order.postal_code,
+                "city": order.city,
+                "province": order.province
+            },
+            "credit_card": {},
+            "total_price": order.total_price,
+            "total_price_tax": round(order.total_price_tax, 2),
+            "transaction": {},
+            "paid": order.paid,
+            "product": {
+                "id": order.product.id if order.product else None,
+                "quantity": order.quantity
+            },
+            "shipping_price": order.shipping_price
+        }
+    }), 200
 
 @api.route('/order/<int:order_id>/pay', methods=['POST'])
 def pay_order(order_id):
@@ -135,16 +199,29 @@ def get_order(order_id):
             "total_price": order.total_price,
             "total_price_tax": round(order.total_price_tax, 2),
             "email": order.email,
+
+            "shipping_information": {
+                "country": order.country,
+                "address": order.address,
+                "postal_code": order.postal_code,
+                "city": order.city,
+                "province": order.province
+            } if order.country else {},
+
+            # Tu n'as pas encore de champs carte
             "credit_card": {},
-            "shipping_information": {},
+
             "paid": order.paid,
+
             "transaction": {
                 "id": order.transaction_id
-                } if order.paid else {},
+            } if order.paid else {},
+
             "product": {
-                "id": order.product.id,
+                "id": order.product.id if order.product else None,
                 "quantity": order.quantity
             },
+
             "shipping_price": order.shipping_price
         }
     }), 200
