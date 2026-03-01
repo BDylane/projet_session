@@ -15,6 +15,7 @@ class Product(Model):
 
     class Meta:
         database = db
+        table_name = "products"
 
 class Order(Model):
     # Informations de la commande [cite: 100-114]
@@ -42,3 +43,4 @@ class Order(Model):
 
     class Meta:
         database = db
+        table_name = "orders"
