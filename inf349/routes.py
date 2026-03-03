@@ -189,7 +189,7 @@ def process_payment(order, data):
         "amount_charged": 10148
     }
     try:
-        # response = requests.post(payment_url, json=payloadTest)    Temporairement on utilisera un mock car pas moyen de faire fonctionner la vrai API
+        # response = requests.post(payment_url, json=payloadTest)    #Temporairement on utilisera un mock car pas moyen de faire fonctionner la vrai API
         response = mockRequestAPIShop(payloadTest)
         if response.status_code == 200:
             response_data = response.json()
