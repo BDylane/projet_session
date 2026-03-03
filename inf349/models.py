@@ -4,13 +4,12 @@ from peewee import *
 db = SqliteDatabase('database.db')
 
 class Product(Model):
-    # Les champs du produit selon les exigences [cite: 381, 382]
-    id = IntegerField(primary_key=True) # Identifiant unique [cite: 380]
+    id = IntegerField(primary_key=True)
     name = CharField()
     description = TextField()
-    price = IntegerField() # Le prix est en cents 
+    price = IntegerField() 
     in_stock = BooleanField()
-    weight = IntegerField() # En grammes
+    weight = IntegerField()
     image = CharField()
 
     class Meta:
