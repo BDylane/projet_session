@@ -18,28 +18,35 @@ class Product(Model):
         table_name = "products"
 
 class Order(Model):
-    # Informations de la commande [cite: 100-114]
-    email = CharField(null=True)
+    product = ForeignKeyField(Product, backref='orders', null=True)
+    quantity = IntegerField(default=1)
     
-    # Information de livraison [cite: 141-147]
-    address = CharField(null=True)
-    postal_code = CharField(null=True)
-    city = CharField(null=True)
-    province = CharField(null=True)
-    country = CharField(null=True)
-
-    # Détails financiers [cite: 126-133]
     total_price = IntegerField(default=0)
     total_price_tax = FloatField(default=0.0)
     shipping_price = IntegerField(default=0)
     paid = BooleanField(default=False)
+
+    # client_information
+    email = CharField(null=True)
+        
+    # shipping_information
+    country = CharField(null=True)
+    address = CharField(null=True)
+    postal_code = CharField(null=True)
+    city = CharField(null=True)
+    province = CharField(null=True)
     
-    # Informations de transaction (service de paiement) [cite: 249-253]
+    # credit_card
+    name = CharField(null=True)    
+    first_digits = CharField(null=True)
+    last_digits = CharField(null=True)
+    expiration_year = CharField(null=True)
+    expiration_month = CharField(null=True)
+    
+    # transaction
     transaction_id = CharField(null=True)
-    
-    # Un seul produit par commande pour cette étape [cite: 68]
-    product = ForeignKeyField(Product, backref='orders', null=True)
-    quantity = IntegerField(default=1)
+    transaction_success = BooleanField(default=False)
+    transaction_amount_charged = IntegerField(default=0)
 
     class Meta:
         database = db
