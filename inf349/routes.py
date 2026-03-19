@@ -172,25 +172,14 @@ def process_payment(order, data):
     if order.paid:
         return jsonify(ORDERS_ALREADY_PAID_ERROR), 422
     
-    payment_url = "http://dimensweb.uqac.ca/~jgnault/shops/pay/"
+    payment_url = "https://dimensweb.uqac.ca/~jgnault/shops/pay/"
     credit_card = data.get("credit_card")
     payload = {
         "credit_card": credit_card,
         "amount_charged": int(round(order.total_price_tax))
     }
-    payloadTest = {
-        "credit_card": {
-            "name": "John Doe",
-            "number": "4242 4242 4242 4242",
-            "expiration_month": 9,
-            "expiration_year": 2024,
-            "cvv": "123"
-        },
-        "amount_charged": 10148
-    }
     try:
-        # response = requests.post(payment_url, json=payloadTest)    #Temporairement on utilisera un mock car pas moyen de faire fonctionner la vrai API
-        response = mockRequestAPIShop(payloadTest)
+        response = requests.post(payment_url, json=payload)
         if response.status_code == 200:
             response_data = response.json()
             order.paid = True
@@ -200,19 +189,20 @@ def process_payment(order, data):
 
             order.name = card_data.get("name")
             order.first_digits = card_data.get("first_digits")
-            order.last_digits = card_data.get("last_digits")
+            order.last_digits = str(card_data.get("last_digits"))
             order.expiration_year = card_data.get("expiration_year")
             order.expiration_month = card_data.get("expiration_month")
 
             order.transaction_id = transaction_data.get("id")
-            order.transaction_success = transaction_data.get("success")
+            order.transaction_success = True
             order.transaction_amount_charged = transaction_data.get("amount_charged")
             
             order.save()
             return jsonify(return_object_order(order)), 200
         else:
             return jsonify(response.json()), response.status_code
-    except Exception:
+    except Exception as e:
+        print(f"Error occurred: {e}")
         return jsonify(
             {
                 "errors": {
@@ -250,68 +240,6 @@ def update_order(order_id):
 
     if "credit_card" in data:
         return process_payment(order, data)
-        
-     
-# Temporaire car pas moyen de faire fonctionner la vraie requete       
-def mockRequestAPIShop(payload):
-
-    class MockResponse:
-        def __init__(self, status_code, json_data):
-            self.status_code = status_code
-            self._json_data = json_data
-
-        def json(self):
-            return self._json_data
-
-    credit_card = payload.get("credit_card")
-    required_fields = ["name", "number", "expiration_month", "expiration_year", "cvv"]
-
-    if not all(field in credit_card for field in required_fields):
-        return MockResponse(422, {
-            "errors": {
-                "credit_card": {
-                    "code": "missing-fields",
-                    "name": "Champs de carte de crédit manquants"
-                }
-            }
-        })
-
-    card_number = credit_card.get("number")
-
-    if card_number == "4000 0000 0000 0002":
-        return MockResponse(422, {
-            "errors": {
-                "credit_card": {
-                    "code": "card-declined",
-                    "name": "La carte de crédit a été déclinée"
-                }
-            }
-        })
-
-    if card_number == "4242 4242 4242 4242":
-        return MockResponse(200, {
-            "credit_card": {
-                "name": credit_card.get("name"),
-                "first_digits": card_number[:4],
-                "last_digits": card_number[-4:],
-                "expiration_year": credit_card.get("expiration_year"),
-                "expiration_month": credit_card.get("expiration_month")
-            },
-            "transaction": {
-                "id": "wgEQ4zAUdYqpr21rt8A10dDrKbfcLmqi",
-                "success": True,
-                "amount_charged": payload["amount_charged"]
-            }
-        })
-
-    return MockResponse(400, {
-        "errors": {
-            "credit_card": {
-                "code": "invalid-card",
-                "name": "Numéro de carte invalide"
-            }
-        }
-    })
 
 @api.route('/order/<int:order_id>', methods=['GET'])
 def get_order(order_id):
