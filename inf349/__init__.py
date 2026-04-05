@@ -1,6 +1,7 @@
 from flask import Flask
 from .models import db, Product, Order
 from .services import fetch_and_store_products
+import os
 
 def create_app():
     app = Flask(__name__)
@@ -12,11 +13,22 @@ def create_app():
         db.close()
         print("La base de données a été initialisée avec succès !")
 
-    @app.before_first_request
+    @app.cli.command("worker")
+    def worker():
+        from redis import Redis
+        from rq import Worker, Queue, Connection
+        redis_url = os.environ.get('REDIS_URL')
+        conn = Redis.from_url(redis_url)
+        with Connection(conn):
+            w = Worker([Queue('default')])
+            w.work()
+
+    @app.before_request
     def load_products():
-        db.connect(reuse_if_open=True)
-        fetch_and_store_products()
-        db.close()
+        if not hasattr(app, '_products_loaded'):
+            db.connect(reuse_if_open=True)
+            fetch_and_store_products()
+            app._products_loaded = True
 
     @app.after_request
     def after_request(response):

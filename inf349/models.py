@@ -1,7 +1,13 @@
 from peewee import *
+import os
 
-# On crée un fichier local 'database.db' pour stocker les données 
-db = SqliteDatabase('database.db')
+db = PostgresqlDatabase(
+    os.environ.get('DB_NAME'),
+    host=os.environ.get('DB_HOST'),
+    user=os.environ.get('DB_USER'),
+    password=os.environ.get('DB_PASSWORD'),
+    port=int(os.environ.get('DB_PORT'))
+)
 
 class Product(Model):
     id = IntegerField(primary_key=True)
