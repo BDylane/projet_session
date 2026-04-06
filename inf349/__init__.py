@@ -1,6 +1,8 @@
 from flask import Flask
 from .models import db, Product, Order
 from .services import fetch_and_store_products
+from .routes import api
+from .views import views
 import os
 
 def create_app():
@@ -36,7 +38,7 @@ def create_app():
             db.close()
         return response
 
-    from .routes import api
     app.register_blueprint(api)
+    app.register_blueprint(views)
 
     return app
